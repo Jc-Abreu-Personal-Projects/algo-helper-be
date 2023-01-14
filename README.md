@@ -8,14 +8,14 @@ Backend Service for Algo-Helper
 ## Endpoints:
 
 ### POST: 
-> **/newcard**
+> **/create**
 
 ### DELETE: 
 > **/deletecard**
 
 ### GET: 
-> **/getcards**
+> **/cards**
 
 ### UPDATE: 
-> **/updatecardfield**
-> **/updatecardpositions**
+> **/update/field**
+> **/update/position**
