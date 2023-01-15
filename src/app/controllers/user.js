@@ -3,6 +3,7 @@ const User = require('../models/user');
 async function createUser(res, { firstname, lastname, email, password, industryStatus }) {
 
   try {
+    //Create new user with given parameters
     const response = await User.create({
       first_name: firstname,
       last_name: lastname,
@@ -11,17 +12,22 @@ async function createUser(res, { firstname, lastname, email, password, industryS
       industry_status: industryStatus,
     })
 
+    //Convert to JSON
     const package = response.toJSON();
-    res.send(package);
+    //Send status code 201 to client
+    res.sendStatus(201);
   } catch (error) {
     console.log(error);
     console.log("User not Created");
+
+    //Bad Request via Client
     res.sendStatus(400);
   }
 }
 
 async function deleteUser(res, userID) {
   try {
+    //Delete user from database
     const response = await User.destroy({
       where: {
         id: userID
@@ -29,6 +35,7 @@ async function deleteUser(res, userID) {
     });
 
     console.log("User Deleted");
+    //Send status for successful deletion
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
@@ -46,6 +53,8 @@ async function fetchUserInfo(res, email, password) {
       }
     })
 
+    //If userInfo is empty
+    //No user is found, send 404 since resource is not found
     if (!userInfo.length) {
       console.log('User Info not Found');
       res.sendStatus(404);
@@ -61,11 +70,12 @@ async function fetchUserInfo(res, email, password) {
   }
 }
 
-
+//Package controller methods in an object
 const userController = {
   createUser: createUser,
   deleteUser: deleteUser,
   fetchUserInfo: fetchUserInfo
 }
 
+//Export Methods
 module.exports = userController;

@@ -27,9 +27,6 @@ const User = connection.define('user', {
   industry_status: {
     type: DataTypes.STRING,
     allowNull: false
-  },
-  date_created: {
-    type: DataTypes.DATEONLY
   }
 })
 
