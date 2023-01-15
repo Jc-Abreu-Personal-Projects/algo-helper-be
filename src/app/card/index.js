@@ -1,6 +1,10 @@
-const express = require ('express');
+const express = require('express');
 
-const updateHandlers = require ('./update');
+const connection = require('../../db/db');
+
+const userController = require('../controllers/user');
+
+const updateHandlers = require('./update');
 
 const getCards = express.Router();
 const deleteCard = express.Router();
@@ -8,15 +12,23 @@ const updateCards = express.Router();
 const createCard = express.Router();
 
 getCards.get("/cards", (req, res) => {
-  res.send("Retrieved");
+  //Fetches user
+  
+  // res.send("Retrieved");
 });
 
 deleteCard.delete("/", (req, res) => {
-  res.send("Deleted");
+  //Deletes user from Database
+  
+
 })
 
 createCard.post("/", (req, res) => {
-  res.send("Created");
+
+  //WRITES user into Database
+  
+
+
 })
 
 updateCards.use('/', updateHandlers.updateField);
