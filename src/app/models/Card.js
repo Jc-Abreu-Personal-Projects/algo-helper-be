@@ -2,19 +2,16 @@ const { DataTypes } = require('sequelize');
 
 const connection = require('../../db/db.js');
 
-const Card = connection.define('Card', {
+const Card = connection.define('card', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true
   },
-  date_created: {
-    type: DataTypes.DATEONLY,
-  },
   platform: DataTypes.STRING,
-  problem_number: DateTypes.INTEGER,
-  problem_name: DateTypes.STRING,
-  difficulty: DateTypes.STRING,
+  problem_number: DataTypes.INTEGER,
+  problem_name: DataTypes.STRING,
+  difficulty: DataTypes.STRING,
   user_id: DataTypes.INTEGER,
   status: DataTypes.STRING,
   time_completed: DataTypes.INTEGER,
@@ -27,13 +24,14 @@ const Card = connection.define('Card', {
   space_complexity: DataTypes.STRING,
   time_complexity: DataTypes.STRING,
   comments: DataTypes.STRING,
-  datastructure: DataTypes.STRING,
+  data_structure: DataTypes.STRING,
+  technique: DataTypes.STRING,
   status: {
     type: DataTypes.STRING,
-    allowNull: false  
+    allowNull: false
   },
-  order: {
-    type: DataTypes.INTEGER
+  card_order: {
+    type: DataTypes.INTEGER,
     allowNull: false
   }
 })

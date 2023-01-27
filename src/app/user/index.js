@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const userController = require('../controllers/user');
+const validateCredentials = require('../../utility/validate/userValidation');
 
 const getUser = express.Router();
 const deleteUser = express.Router();
@@ -10,13 +11,18 @@ app.use(express.json());
 
 getUser.get('/signin', (req, res) => {
   const authHeader = req.headers.authorization;
-
   if (authHeader) {
     const auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-    const username = auth[0];
+    const email = auth[0];
     const password = auth[1];
 
-    userController.fetchUserInfo(res, username, password);
+    //check email and password
+    if (!validateCredentials.validateEmail(email) || !validateCredentials.validatePassword(password)) {
+      res.sendStatus(400);
+      return;
+    }
+
+    userController.fetchUserInfo(res, email, password);
   } else {
     res.sendStatus(400);
   }
@@ -38,25 +44,36 @@ registerUser.post('/register', (req, res) => {
   const authHeader = req.headers.authorization;
   //Assign to req.body
   const userInfo = req.body;
-
   if (authHeader) {
     //Extract and translate email and password
     const auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-    const username = auth[0];
+    const email = auth[0];
     const password = auth[1];
-    
+
+    //check email and password
+    if (!validateCredentials.validateEmail(email) || !validateCredentials.validatePassword(password)) {
+      res.sendStatus(400);
+      return;
+    }
+
     //Create unified userData with email and password
     const userData = { ...req.body };
 
-    userData.email = username;
+    //Check if userData contains firstname and lastname
+    if (!userData.firstname || !userData.lastname) {
+      res.sendStatus(400);
+      return;
+    }
+
+    //Add email and password to userData
+    userData.email = email;
     userData.password = password;
-    
+
     //writes new user into database
     userController.createUser(res, userData);
   } else {
     res.sendStatus(400);
   }
-
 })
 
 const userHandlers = {
