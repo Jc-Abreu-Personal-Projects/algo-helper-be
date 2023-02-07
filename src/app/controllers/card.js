@@ -77,15 +77,25 @@ async function deleteCard(res, cardId, userId, status) {
 
 async function fetchCards(res, userId) {
 
-  const query = `SELECT status, JSON_ARRAYAGG(
-    JSON_OBJECT('id', id, 'platform', platform, 'problemNumber', problem_number, 'difficulty', difficulty, 'userId', user_id, 'status', status, 'timeCompleted', time_completed, 'completed', completed, 'solutionLookup', solution_lookup, 'completed', completed, 'solutionLookup', solution_lookup, 'description', description, 'inputs', inputs, 'expectedOutputs', expected_outputs, 'constraints', constraints, 'spaceComplexity', space_complexity, 'timeComplexity', time_complexity, 'comments', comments, 'dataStructure', data_structure, 'technique', technique, 'cardOrder', card_order, 'createdAt', createdAt, 'updatedAt', updatedAt)) AS RESULT FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY card_order) FROM cards WHERE user_id = ${userId})
-     as cards GROUP BY status;`;
+  const query = `SELECT c.status, JSON_ARRAYAGG(
+       JSON_OBJECT('id', cards.id, 'platform', cards.platform, 'problemName', cards.problem_name, 'problemNumber', cards.problem_number, 'difficulty', cards.difficulty, 'userId', cards.user_id, 'status', cards.status, 'timeCompleted', cards.time_completed, 'completed', cards.completed, 'solutionLookup', cards.solution_lookup, 'completed', cards.completed, 'solutionLookup', cards.solution_lookup, 'description', cards.description, 'inputs', cards.inputs, 'expectedOutputs', cards.expected_outputs, 'constraints', cards.constraints, 'spaceComplexity', cards.space_complexity, 'timeComplexity', cards.time_complexity, 'comments', cards.comments, 'dataStructure', cards.data_structure, 'technique', cards.technique, 'cardOrder', cards.card_order, 'createdAt', cards.createdAt, 'updatedAt', cards.updatedAt)) AS RESULT FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY card_order) FROM cards WHERE user_id = ${userId} AND (user_id = ${userId} OR user_id IS NULL)) as c LEFT JOIN cards ON cards.user_id = ${userId} GROUP BY c.status;`;
+
 
   try {
     const Cards = await sequelize.query(query);
+    //Adds missing statuses
+    let reshapedData = {
+      todo: [],
+      revisit: [],
+      done: [],
+      refresh: []
+    }
 
-    console.log('Cards Found');
-    res.send(Cards);
+    Cards[0].map(group => {
+      reshapedData[group.status] = group.RESULT;
+    })
+
+    res.send([reshapedData]);
   } catch (error) {
     console.log(error);
     console.log('Cards not Found');
@@ -96,8 +106,6 @@ async function fetchCards(res, userId) {
 //REORDER LIST,
 // Reorder affected lists 
 async function reorderList(res, status, userId, oldStatus) {
-
-  // const query = `UPDATE cards SET card_order = @rownum := @rownum +1 WHERE status = "${status}" AND user_id = "${userId}" ORDER BY card_order`;
 
   //This query updates the order of cards in the list, it makes it so each row within its respectful list for a user be a difference of one
   let query = `UPDATE cards JOIN (SELECT * FROM cards WHERE status = "${status}" AND user_id = "${userId}" ORDER BY card_order) as c SET
@@ -155,11 +163,6 @@ async function addExistingCardToList(res, userId, newStatus, oldStatus, newOrder
     await reorderList(res, newStatus, userId, oldStatus);
   }
 }
-
-// const { id, platform, problemNumber, problemName, difficulty,
-//   status, timeCompleted, completed, solutionLookup, description,
-//   inputs, expectedOutputs, constraints, spaceComplexity, timeComplexity,
-//   comments, dataStructure, technique } = cardInfo;
 
 const fieldTranslations = {
   problemNumber: 'problem_number',

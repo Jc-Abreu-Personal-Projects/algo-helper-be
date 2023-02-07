@@ -10,6 +10,7 @@ const registerUser = express.Router();
 app.use(express.json());
 
 getUser.get('/signin', (req, res) => {
+  // res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
   const authHeader = req.headers.authorization;
   if (authHeader) {
     const auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');

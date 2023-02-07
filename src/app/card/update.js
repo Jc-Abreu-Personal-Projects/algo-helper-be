@@ -6,7 +6,7 @@ const updatePositions = express.Router();
 
 updateField.patch('/field', (req, res) => {
   //Edits specific field for a specific Card
-
+  console.log(req.query);
   const { userId, cardId, field, newValue } = req.query;
   cardController.editCardField(res, userId, cardId, field, newValue);
 })

@@ -28,6 +28,7 @@ const createCard = express.Router();
 getCards.get("/cards", (req, res) => {
 
   const { userId } = req.query;
+  console.log(userId);
   cardController.fetchCards(res, parseInt(userId));
 
 });
