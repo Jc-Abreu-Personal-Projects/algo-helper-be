@@ -1,21 +1,38 @@
-# algo-helper-service
+# algo-helper-be
 Backend Service for Algo-Helper
 
 
 ## Start up Instructions
 > **"npm start"** to start the server
 
-## Endpoints:
+## User Endpoints:
 
 ### POST: 
-> **/create**
+> **/register**   
+- register user
 
 ### DELETE: 
-> **/deletecard**
+> **/delete/user**     
+- delete user   
 
 ### GET: 
-> **/cards**
+> **/signin**   
+- gets user information
+
+## Card Endpoints:
+
+### POST: 
+> **/create**    
+- create a card
+### DELETE: 
+> **/delete**    
+- delete a card
+### GET: 
+> **/cards**     
+- gets cards
 
 ### UPDATE: 
-> **/update/field**
-> **/update/position**
+> **/update/field**    
+- update card field     
+> **/update/position**   
+- update card position
