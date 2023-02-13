@@ -2,13 +2,62 @@ const { Op } = require('sequelize');
 const Card = require('../models/Card');
 const sequelize = require('../../db/db');
 
+/* 
+  This file contains Handlers for querying a MySQL database. I utilized Sequelize to fasclititate querying.
+  Feel Free to take a look at other project files.
+  Lines 11 - 47 is my proudest work within the backend service.
+*/
+
+async function fetchCards(res, userId) {
+  //This query nests cards that share the same status within their respective lists.
+
+  const query = `SELECT c.status, JSON_ARRAYAGG(
+       JSON_OBJECT('id', cards.id, 'platform', cards.platform, 'problemName',
+       cards.problem_name, 'problemNumber', cards.problem_number, 'difficulty', cards.difficulty,
+       'userId', cards.user_id, 'status', cards.status, 'timeCompleted', cards.time_completed,
+       'completed', cards.completed, 'solutionLookup', cards.solution_lookup, 'completed',
+       cards.completed, 'solutionLookup', cards.solution_lookup, 'description', cards.description,
+       'inputs', cards.inputs, 'expectedOutputs', cards.expected_outputs, 'constraints', cards.constraints,
+       'spaceComplexity', cards.space_complexity, 'timeComplexity', cards.time_complexity, 'comments', cards.comments,
+       'dataStructure', cards.data_structure, 'technique', cards.technique, 'cardOrder', cards.card_order, 'createdAt',
+       cards.createdAt, 'updatedAt', cards.updatedAt)) AS RESULT FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY card_order)
+       FROM cards WHERE user_id = ${userId} AND (user_id = ${userId} OR user_id IS NULL)) as c 
+       LEFT JOIN cards ON cards.user_id = ${userId} 
+       GROUP BY c.status;`;
+  
+  try {
+    const Cards = await sequelize.query(query);
+    //Adds missing statuses
+    /* The query above would not include empty lists 
+    so I had to create a small script that will include empty lists 
+    if they do not exist in the response above */
+    
+    let reshapedData = {
+      todo: [],
+      revisit: [],
+      done: [],
+      refresh: []
+    }
+
+    Cards[0].map(group => {
+      reshapedData[group.status] = group.RESULT;
+    })
+
+    res.send([reshapedData]);
+  } catch (error) {
+    console.log(error);
+    console.log('Cards not Found');
+    res.sendStatus(404);
+  }
+}
+
 async function createCard(res, cardInfo, userId) {
 
   const { id, platform, problemNumber, problemName, difficulty,
     status, timeCompleted, completed, solutionLookup, description,
     inputs, expectedOutputs, constraints, spaceComplexity, timeComplexity,
     comments, dataStructure, technique } = cardInfo;
-
+  //Writes new a new card into the database
   try {
     //Create new card with given parameters
     const response = await Card.create({
@@ -59,13 +108,10 @@ async function deleteCard(res, cardId, userId, status) {
           id: cardId
         }
       });
-
-      console.log("Card Deleted");
     } catch (error) {
       console.log(error);
-      console.log("Card not deleted");
     } finally {
-      //Reorder list for respecful user and card status
+      //Reorder list for respectful user and card status
       reorderList(res, status, userId);
     }
   } catch (error) {
@@ -75,68 +121,33 @@ async function deleteCard(res, cardId, userId, status) {
 
 }
 
-async function fetchCards(res, userId) {
 
-  const query = `SELECT c.status, JSON_ARRAYAGG(
-       JSON_OBJECT('id', cards.id, 'platform', cards.platform, 'problemName',
-       cards.problem_name, 'problemNumber', cards.problem_number, 'difficulty', cards.difficulty,
-       'userId', cards.user_id, 'status', cards.status, 'timeCompleted', cards.time_completed,
-       'completed', cards.completed, 'solutionLookup', cards.solution_lookup, 'completed',
-       cards.completed, 'solutionLookup', cards.solution_lookup, 'description', cards.description,
-       'inputs', cards.inputs, 'expectedOutputs', cards.expected_outputs, 'constraints', cards.constraints,
-       'spaceComplexity', cards.space_complexity, 'timeComplexity', cards.time_complexity, 'comments', cards.comments,
-       'dataStructure', cards.data_structure, 'technique', cards.technique, 'cardOrder', cards.card_order, 'createdAt',
-       cards.createdAt, 'updatedAt', cards.updatedAt)) AS RESULT FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY card_order)
-       FROM cards WHERE user_id = ${userId} AND (user_id = ${userId} OR user_id IS NULL)) as c 
-       LEFT JOIN cards ON cards.user_id = ${userId} 
-       GROUP BY c.status;`;
-
-  try {
-    const Cards = await sequelize.query(query);
-    //Adds missing statuses
-    let reshapedData = {
-      todo: [],
-      revisit: [],
-      done: [],
-      refresh: []
-    }
-
-    Cards[0].map(group => {
-      reshapedData[group.status] = group.RESULT;
-    })
-
-    res.send([reshapedData]);
-  } catch (error) {
-    console.log(error);
-    console.log('Cards not Found');
-    res.sendStatus(404);
-  }
-}
 
 //REORDER LIST,
 // Reorder affected lists 
 async function reorderList(res, status, userId, oldStatus) {
 
-  //This query updates the order of cards in the list, it makes it so each row within its respectful list for a user be a difference of one
+  /*This query updates the order of cards in the list, it makes it so 
+  each row within its respectful list for a user be a difference of one*/
+  
   let query = `UPDATE cards JOIN (SELECT * FROM cards WHERE status = "${status}" AND user_id = "${userId}" ORDER BY card_order) as c SET
   cards.card_order = @rownum := @rownum+1, cards.updatedAt = NOW() WHERE cards.id = c.id;`
 
   try {
     await sequelize.query('SET @rownum := -1;');
     const Cards = await sequelize.query(query);
-
-    console.log('list updated');
+    
+    //if old status is not provided, we only reorder one list
     if (!oldStatus) {
       res.sendStatus(200);
     }
   } catch (error) {
     console.log(error);
-    console.log('list not updated');
     res.sendStatus(404);
   } finally {
-    //UPDATE oldStatus if oldList is not undefined
+    //UPDATE oldStatus if oldStatus is present
     if (oldStatus) {
-
+      //Essentiolly the same query as above
       query = `UPDATE cards JOIN (SELECT * FROM cards WHERE status = "${oldStatus}" AND user_id = "${userId}" ORDER BY card_order) as c SET
       cards.card_order = @rownum := @rownum+1, cards.updatedAt = NOW() WHERE cards.id = c.id;`
 
@@ -144,12 +155,9 @@ async function reorderList(res, status, userId, oldStatus) {
         await sequelize.query('SET @rownum := -1;');
         const Cards = await sequelize.query(query);
 
-        console.log('list updated');
         res.sendStatus(200);
-
       } catch (error) {
         console.log(error);
-        console.log('list not updated');
         res.sendStatus(404);
       }
     } else {
@@ -159,12 +167,13 @@ async function reorderList(res, status, userId, oldStatus) {
 }
 
 async function addExistingCardToList(res, userId, newStatus, oldStatus, newOrderNumber, cardId) {
-
+  
+  //Adds a pre existing card to a list
   const query = `UPDATE cards SET card_order = "${newOrderNumber}", status = "${newStatus}" WHERE user_id = "${userId}" AND id = "${cardId}"`;
 
   try {
     const Cards = await sequelize.query(query);
-
+    
     console.log('Position changed');
   } catch (error) {
     console.log(error);
@@ -174,6 +183,8 @@ async function addExistingCardToList(res, userId, newStatus, oldStatus, newOrder
   }
 }
 
+
+//Object that stores client card property names as keys and its counterpart for querying.
 const fieldTranslations = {
   problemNumber: 'problem_number',
   problemName: 'problem_name',
@@ -187,17 +198,17 @@ const fieldTranslations = {
 
 async function editCardField(res, userId, cardId, field, newValue) {
 
-  //Reassign field if given field has two or more words
+  //Reassign field if field exists within the fieldTranslations object.
   if (fieldTranslations[field]) field = fieldTranslations[field];
-
+  
+  //Update field with new value
   const query = `UPDATE cards SET ${field} = "${newValue}", updatedAt = NOW() WHERE user_id = "${userId}" AND id = "${cardId}"`;
 
   try {
     const Cards = await sequelize.query(query);
-    console.log("Card Info Changed")
     res.sendStatus(201);
   } catch (error) {
-    console.log(error, 'Card Info Not Changed');
+    console.log(error);
     res.sendStatus(404);
   }
 }
