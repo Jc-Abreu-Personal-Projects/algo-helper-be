@@ -78,8 +78,18 @@ async function deleteCard(res, cardId, userId, status) {
 async function fetchCards(res, userId) {
 
   const query = `SELECT c.status, JSON_ARRAYAGG(
-       JSON_OBJECT('id', cards.id, 'platform', cards.platform, 'problemName', cards.problem_name, 'problemNumber', cards.problem_number, 'difficulty', cards.difficulty, 'userId', cards.user_id, 'status', cards.status, 'timeCompleted', cards.time_completed, 'completed', cards.completed, 'solutionLookup', cards.solution_lookup, 'completed', cards.completed, 'solutionLookup', cards.solution_lookup, 'description', cards.description, 'inputs', cards.inputs, 'expectedOutputs', cards.expected_outputs, 'constraints', cards.constraints, 'spaceComplexity', cards.space_complexity, 'timeComplexity', cards.time_complexity, 'comments', cards.comments, 'dataStructure', cards.data_structure, 'technique', cards.technique, 'cardOrder', cards.card_order, 'createdAt', cards.createdAt, 'updatedAt', cards.updatedAt)) AS RESULT FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY card_order) FROM cards WHERE user_id = ${userId} AND (user_id = ${userId} OR user_id IS NULL)) as c LEFT JOIN cards ON cards.user_id = ${userId} GROUP BY c.status;`;
-
+       JSON_OBJECT('id', cards.id, 'platform', cards.platform, 'problemName',
+       cards.problem_name, 'problemNumber', cards.problem_number, 'difficulty', cards.difficulty,
+       'userId', cards.user_id, 'status', cards.status, 'timeCompleted', cards.time_completed,
+       'completed', cards.completed, 'solutionLookup', cards.solution_lookup, 'completed',
+       cards.completed, 'solutionLookup', cards.solution_lookup, 'description', cards.description,
+       'inputs', cards.inputs, 'expectedOutputs', cards.expected_outputs, 'constraints', cards.constraints,
+       'spaceComplexity', cards.space_complexity, 'timeComplexity', cards.time_complexity, 'comments', cards.comments,
+       'dataStructure', cards.data_structure, 'technique', cards.technique, 'cardOrder', cards.card_order, 'createdAt',
+       cards.createdAt, 'updatedAt', cards.updatedAt)) AS RESULT FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY card_order)
+       FROM cards WHERE user_id = ${userId} AND (user_id = ${userId} OR user_id IS NULL)) as c 
+       LEFT JOIN cards ON cards.user_id = ${userId} 
+       GROUP BY c.status;`;
 
   try {
     const Cards = await sequelize.query(query);
