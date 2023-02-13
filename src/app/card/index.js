@@ -6,7 +6,7 @@ const upload = multer();
 
 
 app.use(express.json());
-// app.use(bodyParser.json());
+
 app.use(express.urlencoded({ extended: true }));
 
 app.use(upload.array());
@@ -28,7 +28,6 @@ const createCard = express.Router();
 getCards.get("/cards", (req, res) => {
 
   const { userId } = req.query;
-  console.log(userId);
   cardController.fetchCards(res, parseInt(userId));
 
 });
